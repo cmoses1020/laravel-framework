@@ -113,6 +113,18 @@ class FoundationInteractsWithDatabaseTest extends TestCase
         $this->assertDatabaseMissing($this->table, $this->data);
     }
 
+    public function testDontSeeInDatabaseDoesNotFindResultsWithNestedWhereArray()
+    {
+        $this->data = [
+            ['title', '=', 'Spark'],
+            ['name', '=', 'Laravel'],
+        ];
+
+        $this->mockCountBuilder(0);
+        $this->assertDatabaseMissing($this->table, $this->data);
+    }
+    
+
     public function testAssertDatabaseMissingSupportModels()
     {
         $this->mockCountBuilder(0);
