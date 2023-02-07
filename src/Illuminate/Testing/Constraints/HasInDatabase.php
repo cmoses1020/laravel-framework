@@ -128,15 +128,15 @@ class HasInDatabase extends Constraint
     {
         foreach ($this->data as $key => $data) {
             if (is_numeric($key) && is_array($data)) {
-                foreach ($data as [$key, /*$operator*/, $value]) {
-                    $output[$key] = $value instanceof Expression ? (string) $value : $value;
-                }
+                [$key, $operatorOrValue] = $data;
+                $value = array_has_key($data, 2) ? $data[2] : $operatorOrValue;
+                $operator = array_has_key($data, 2) ? $operatorOrValue : '=';
+                $output[$key] = $operator . ' ' . ($value instanceof expression ? (string) $value : $value);
             } else {
-                
-                $output[$key] = $data instanceof Expression ? (string) $data : $data;
+                $output[$key] = $data instanceof expression ? (string) $data : $data;
             }
         }
-        dump(json_encode($output ?? [], $options));
+
         return json_encode($output ?? [], $options);
     }
 }
