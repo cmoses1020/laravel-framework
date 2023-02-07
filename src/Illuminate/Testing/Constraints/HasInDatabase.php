@@ -4,6 +4,7 @@ namespace Illuminate\Testing\Constraints;
 
 use Illuminate\Database\Connection;
 use Illuminate\Database\Query\Expression;
+use Illuminate\Support\Arr;
 use PHPUnit\Framework\Constraint\Constraint;
 
 class HasInDatabase extends Constraint
@@ -78,17 +79,30 @@ class HasInDatabase extends Constraint
     {
         $query = $this->database->table($table);
 
-        $similarResults = $query->where(
-            array_key_first($this->data),
-            $this->data[array_key_first($this->data)]
-        )->select(array_keys($this->data))->limit($this->show)->get();
+        $firstKey = array_key_first($this->data);
+        $firstValue = $this->data[array_key_first($this->data)];
+
+        if (is_numeric($firstKey) && is_array($firstValue)) {
+            $similarResults = $query->where(...array_values($firstValue))
+                ->select(Arr::pluck($this->data, 0))->limit($this->show)->get();
+        } else {
+            $similarResults = $query->where(
+                array_key_first($this->data),
+                $this->data[array_key_first($this->data)]
+            )->select(array_keys($this->data))->limit($this->show)->get();
+        }
 
         if ($similarResults->isNotEmpty()) {
             $description = 'Found similar results: '.json_encode($similarResults, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } else {
             $query = $this->database->table($table);
 
-            $results = $query->select(array_keys($this->data))->limit($this->show)->get();
+            if (is_numeric($firstKey) && is_array($firstValue)) {
+                $query->select(Arr::pluck($this->data, 0));
+            } else {
+                $query->select(array_keys($this->data));
+            }
+            $results = $query->limit($this->show)->get();
 
             if ($results->isEmpty()) {
                 return 'The table is empty';

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Testing\Concerns\InteractsWithDatabase;
 use Illuminate\Foundation\Testing\TestCase as TestingTestCase;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Mockery as m;
 use Orchestra\Testbench\Concerns\CreatesApplication;
@@ -40,7 +41,17 @@ class FoundationInteractsWithDatabaseTest extends TestCase
     public function testSeeInDatabaseFindsResults()
     {
         $this->mockCountBuilder(1);
+        $this->assertDatabaseHas($this->table, $this->data);
+    }
 
+    public function testSeeInDatabaseFindsResultsWithNestedWhereArray()
+    {
+        $this->data = [
+            ['title', '=', 'Spark'],
+            ['name', '=', 'Laravel'],
+        ];
+
+        $this->mockCountBuilder(1);
         $this->assertDatabaseHas($this->table, $this->data);
     }
 
@@ -394,9 +405,13 @@ class FoundationInteractsWithDatabaseTest extends TestCase
         $key = array_key_first($this->data);
         $value = $this->data[$key];
 
-        $builder->shouldReceive('where')->with($key, $value)->andReturnSelf();
-
-        $builder->shouldReceive('select')->with(array_keys($this->data))->andReturnSelf();
+        if (is_numeric($key) && is_array($value)) {
+            $builder->shouldReceive('where')->with(...array_values($value))->andReturnSelf();
+            $builder->shouldReceive('select')->with(Arr::pluck($this->data, 0))->andReturnSelf();
+        } else {
+            $builder->shouldReceive('where')->with($key, $value)->andReturnSelf();
+            $builder->shouldReceive('select')->with(array_keys($this->data))->andReturnSelf();
+        }
 
         $builder->shouldReceive('limit')->andReturnSelf();
 
